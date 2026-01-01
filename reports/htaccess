@@ -1,0 +1,44 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # RewriteBase will be auto-detected or set as needed per deployment
+
+    # Redirect HTTP to HTTPS (commented for local development)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Skip .htaccess
+    RewriteRule ^\.htaccess$ - [F]
+
+    # Skip real directories and files
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Skip admin-secure paths
+    RewriteRule ^admin-secure/ - [L]
+    
+    RewriteRule ^cashibhai/?$ agent/index.php [QSA,L]
+    RewriteRule ^setup/?$ setup.php [QSA,L]
+    RewriteRule ^setup-process/?$ setup-process.php [QSA,L]
+
+
+    # Route to index.php for page requests
+    RewriteRule ^([a-zA-Z0-9_-]+)/?$ index.php?page=$1 [QSA,L]
+    RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/?$ index.php?page=$1&id=$2 [QSA,L]
+
+    # API endpoints
+    RewriteRule ^api/([a-zA-Z0-9_-]+)/?$ api/handler.php?action=$1 [QSA,L]
+    RewriteRule ^api/([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/?$ api/handler.php?action=$1&id=$2 [QSA,L]
+
+    # File blob serving
+    RewriteRule ^files/([a-zA-Z0-9_-]+)/?$ public/api/file-blob.php?file=$1 [QSA,L]
+
+    # Cache control headers
+    <FilesMatch "\.(jpg|jpeg|png|gif|ico|css|js|svg|webp|woff|woff2)$">
+        Header set Cache-Control "max-age=31536000, public"
+    </FilesMatch>
+</IfModule>
+
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

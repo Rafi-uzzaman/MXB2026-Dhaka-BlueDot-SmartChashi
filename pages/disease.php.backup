@@ -1,0 +1,370 @@
+<?php
+
+if (!isLoggedIn()) {
+    redirect('login');
+}
+
+include __DIR__ . '/../layouts/header.php';
+
+$user = getCurrentUser();
+$db = new Database();
+$crops = $db->resultSet("SELECT * FROM crop_data WHERE farmer_id = ? ORDER BY created_at DESC LIMIT 5", [$_SESSION['user_id']]);
+?>
+
+<section class="hero">
+    <h1><span class="material-icons" style="vertical-align: middle; font-size: 2rem;">bug_report</span> <?php echo __('disease_detection'); ?></h1>
+    <p><?php echo __('detect_crop_diseases'); ?></p>
+</section>
+
+<?php if ($crops): ?>
+    <div class="disease-detection-grid">
+        <div class="card disease-form-card">
+            <h2><span class="material-icons" style="vertical-align: middle;">photo_camera</span> <?php echo __('analyze_photo'); ?></h2>
+            <form id="diseaseForm" method="POST" enctype="multipart/form-data" class="disease-form">
+                <div class="form-group">
+                    <label for="cropId"><?php echo __('select_crop'); ?> *</label>
+                    <select id="cropId" name="cropId" required>
+                        <option value=""><?php echo __('choose_crop'); ?></option>
+                        <?php foreach ($crops as $crop): ?>
+                            <option value="<?php echo $crop['crop_id']; ?>">
+                                <?php echo htmlspecialchars($crop['crop_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><?php echo __('upload_image'); ?> *</label>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0.5rem;"><?php echo __('jpg_png_max'); ?></p>
+                    
+                    <!-- Image Preview Area -->
+                    <div id="imagePreviewArea" style="display: none; margin-bottom: 1rem;">
+                        <img id="imagePreview" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 0.5rem;">
+                        <button type="button" onclick="clearImage()" class="btn btn-small btn-secondary">
+                            <span class="material-icons">close</span> Remove Image
+                        </button>
+                    </div>
+                    
+                    <!-- Camera and Upload Buttons -->
+                    <div id="captureButtons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" onclick="openCamera()" class="btn btn-secondary" style="flex: 1;">
+                            <span class="material-icons">photo_camera</span> Take Photo
+                        </button>
+                        <button type="button" onclick="document.getElementById('diseaseImage').click()" class="btn btn-secondary" style="flex: 1;">
+                            <span class="material-icons">upload</span> Upload Image
+                        </button>
+                    </div>
+                    <input type="file" id="diseaseImage" name="diseaseImage" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                </div>
+
+                <!-- Camera Modal -->
+                <div id="cameraModal" class="modal" style="display: none;">
+                    <div class="modal-content" style="max-width: 600px;">
+                        <span class="close-modal" onclick="closeCamera()">&times;</span>
+                        <h3><span class="material-icons">photo_camera</span> Capture Plant Image</h3>
+                        <video id="cameraVideo" autoplay playsinline style="width: 100%; border-radius: 8px; margin: 1rem 0;"></video>
+                        <canvas id="cameraCanvas" style="display: none;"></canvas>
+                        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                            <button type="button" onclick="capturePhoto()" class="btn">
+                                <span class="material-icons">camera</span> Capture
+                            </button>
+                            <button type="button" onclick="closeCamera()" class="btn btn-secondary">
+                                <span class="material-icons">close</span> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" id="analyzeBtn" disabled>
+                    <span class="material-icons">analytics</span> <?php echo __('analyze'); ?>
+                </button>
+            </form>
+
+            <!-- Analysis Loading -->
+            <div id="analysisLoading" style="display: none; margin-top: 1.5rem; text-align: center;">
+                <span class="material-icons rotating" style="font-size: 3rem; color: var(--primary);">sync</span>
+                <p style="margin-top: 1rem; color: #666;">Analyzing plant disease...</p>
+            </div>
+
+            <!-- Disease Results -->
+            <div id="diseaseResults" style="display: none; margin-top: 1.5rem;"></div>
+        </div>
+
+        <div class="card disease-instructions-card">
+            <h3><span class="material-icons" style="vertical-align: middle;">checklist</span> <?php echo __('how_to_use'); ?></h3>
+            <ol class="instruction-list">
+                <li><span class="material-icons">check_circle</span><?php echo __('select_crop'); ?></li>
+                <li><span class="material-icons">check_circle</span><?php echo __('take_clear_photo'); ?></li>
+                <li><span class="material-icons">check_circle</span><?php echo __('good_lighting'); ?></li>
+                <li><span class="material-icons">check_circle</span><?php echo __('upload_get_results'); ?></li>
+            </ol>
+        </div>
+    </div>
+    <?php else: ?>
+        <div class="notice notice-info mt-3">
+            <p><?php echo __('add_crop_first'); ?></p>
+            <a href="<?php echo $base_url; ?>crops" class="btn btn-small mt-2"><?php echo __('add_crop'); ?></a>
+        </div>
+    <?php endif; ?>
+        </div>
+
+    <h2 class="mt-4" style="margin-left:28px"><span class="material-icons" style="vertical-align: middle;">library_books</span> Common Diseases Reference</h2>
+    <div class="disease-reference-grid">
+        <div class="card disease-ref-card">
+            <h4><span class="material-icons" style="color: #dc3545;">emergency</span> Tomato Diseases</h4>
+            <ul class="disease-list">
+                <li><span class="material-icons">arrow_right</span>Early Blight</li>
+                <li><span class="material-icons">arrow_right</span>Late Blight</li>
+                <li><span class="material-icons">arrow_right</span>Fusarium Wilt</li>
+                <li><span class="material-icons">arrow_right</span>Bacterial Wilt</li>
+            </ul>
+        </div>
+
+        <div class="card disease-ref-card">
+            <h4><span class="material-icons" style="color: #28a745;">eco</span> Vegetable Diseases</h4>
+            <ul class="disease-list">
+                <li><span class="material-icons">arrow_right</span>Powdery Mildew</li>
+                <li><span class="material-icons">arrow_right</span>Downy Mildew</li>
+                <li><span class="material-icons">arrow_right</span>Damping Off</li>
+                <li><span class="material-icons">arrow_right</span>Root Rot</li>
+            </ul>
+        </div>
+    </div>
+
+<script>
+let cameraStream = null;
+let capturedImageFile = null;
+
+// Handle file selection from input
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        displayImagePreview(file);
+        capturedImageFile = file;
+    }
+}
+
+// Display image preview
+function displayImagePreview(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('imagePreview').src = e.target.result;
+        document.getElementById('imagePreviewArea').style.display = 'block';
+        document.getElementById('captureButtons').style.display = 'none';
+        document.getElementById('analyzeBtn').disabled = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+// Clear selected image
+function clearImage() {
+    document.getElementById('imagePreview').src = '';
+    document.getElementById('imagePreviewArea').style.display = 'none';
+    document.getElementById('captureButtons').style.display = 'flex';
+    document.getElementById('diseaseImage').value = '';
+    document.getElementById('analyzeBtn').disabled = true;
+    capturedImageFile = null;
+}
+
+// Open camera modal
+async function openCamera() {
+    const modal = document.getElementById('cameraModal');
+    const video = document.getElementById('cameraVideo');
+    
+    try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' },
+            audio: false 
+        });
+        video.srcObject = cameraStream;
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } catch (error) {
+        alert('Unable to access camera. Please check permissions or use upload instead.');
+        console.error('Camera error:', error);
+    }
+}
+
+// Close camera modal
+function closeCamera() {
+    const modal = document.getElementById('cameraModal');
+    const video = document.getElementById('cameraVideo');
+    
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    
+    video.srcObject = null;
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// Capture photo from camera
+function capturePhoto() {
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.getElementById('cameraCanvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    
+    canvas.toBlob(function(blob) {
+        capturedImageFile = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+        displayImagePreview(capturedImageFile);
+        closeCamera();
+    }, 'image/jpeg', 0.9);
+}
+
+// Handle form submission
+document.getElementById('diseaseForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const cropId = document.getElementById('cropId').value;
+    if (!cropId) {
+        alert('Please select a crop');
+        return;
+    }
+    
+    if (!capturedImageFile) {
+        alert('Please capture or upload an image');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('analysisLoading').style.display = 'block';
+    document.getElementById('diseaseResults').style.display = 'none';
+    document.getElementById('analyzeBtn').disabled = true;
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('image', capturedImageFile);
+    formData.append('cropId', cropId);
+    
+    try {
+        const response = await fetch('<?php echo $base_url; ?>api/disease/analyze.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        // Hide loading
+        document.getElementById('analysisLoading').style.display = 'none';
+        
+        if (result.success) {
+            displayResults(result.data);
+        } else {
+            alert('Error: ' + (result.message || 'Analysis failed'));
+            document.getElementById('analyzeBtn').disabled = false;
+        }
+    } catch (error) {
+        document.getElementById('analysisLoading').style.display = 'none';
+        alert('Error analyzing image. Please try again.');
+        console.error('Analysis error:', error);
+        document.getElementById('analyzeBtn').disabled = false;
+    }
+});
+
+// Display analysis results
+function displayResults(data) {
+    const resultsDiv = document.getElementById('diseaseResults');
+    
+    const severityColor = {
+        'high': '#dc3545',
+        'medium': '#ffc107',
+        'low': '#28a745'
+    };
+    
+    const severityIcon = {
+        'high': 'emergency',
+        'medium': 'warning',
+        'low': 'check_circle'
+    };
+    
+    const confidencePercent = Math.round(data.confidence * 100);
+    
+    resultsDiv.innerHTML = `
+        <div class="card" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border: none;">
+            <h3 style="color: #333; margin-bottom: 1rem;">
+                <span class="material-icons" style="vertical-align: middle;">science</span>
+                Analysis Results
+            </h3>
+            
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <h4 style="margin: 0; color: ${severityColor[data.severity]};">
+                        <span class="material-icons" style="vertical-align: middle;">${severityIcon[data.severity]}</span>
+                        ${data.disease}
+                    </h4>
+                    <span style="background: ${severityColor[data.severity]}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">
+                        ${data.severity.toUpperCase()}
+                    </span>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <p style="margin: 0.5rem 0; color: #666;">
+                        <strong>Confidence:</strong> ${confidencePercent}%
+                    </p>
+                    <div style="background: #e9ecef; border-radius: 10px; height: 10px; overflow: hidden;">
+                        <div style="background: ${severityColor[data.severity]}; height: 100%; width: ${confidencePercent}%; transition: width 0.5s;"></div>
+                    </div>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; border-left: 4px solid ${severityColor[data.severity]};">
+                    <p style="margin: 0; color: #333;">
+                        <strong><span class="material-icons" style="vertical-align: middle; font-size: 1.2rem;">local_hospital</span> Treatment:</strong><br>
+                        ${data.treatment}
+                    </p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="clearImage(); document.getElementById('diseaseResults').style.display='none';" class="btn btn-secondary">
+                    <span class="material-icons">refresh</span> Analyze Another
+                </button>
+            </div>
+        </div>
+    `;
+    
+    resultsDiv.style.display = 'block';
+    document.getElementById('analyzeBtn').disabled = false;
+}
+
+// CSS for modal and animations
+const style = document.createElement('style');
+style.textContent = `
+    .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s;
+    }
+    
+    .rotating {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+`;
+document.head.appendChild(style);
+</script>
+
+<?php include __DIR__ . '/../layouts/footer.php'; ?>

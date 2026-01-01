@@ -1,0 +1,60 @@
+{
+    "total_users": "5",
+    "users_in_range": "5",
+    "by_role": [
+        {
+            "role": "farmer",
+            "count": "2"
+        },
+        {
+            "role": "officer",
+            "count": "1"
+        },
+        {
+            "role": "admin",
+            "count": "2"
+        }
+    ],
+    "recent_users": [
+        {
+            "user_id": "60",
+            "first_name": "Mohatamim",
+            "last_name": "dfdfsfsss",
+            "email": "dfdfd@gmail.com",
+            "role": "farmer",
+            "created_at": "2025-12-30 18:36:18"
+        },
+        {
+            "user_id": "59",
+            "first_name": "vdddf",
+            "last_name": "",
+            "email": "dfdfddfd@fdfd.com",
+            "role": "officer",
+            "created_at": "2025-12-30 18:14:14"
+        },
+        {
+            "user_id": "50",
+            "first_name": "Mohatamim",
+            "last_name": "",
+            "email": "mohatmimhaque1234@gmail.com",
+            "role": "farmer",
+            "created_at": "2025-12-30 17:09:26"
+        },
+        {
+            "user_id": "49",
+            "first_name": "Admin",
+            "last_name": "Demo",
+            "email": "admin@smartcashi.com",
+            "role": "admin",
+            "created_at": "2025-12-30 14:12:31"
+        },
+        {
+            "user_id": "46",
+            "first_name": "Mohatamim",
+            "last_name": "Jame",
+            "email": "mohatamim1234@gmail.com",
+            "role": "admin",
+            "created_at": "2025-12-29 20:09:36"
+        }
+    ]
+}

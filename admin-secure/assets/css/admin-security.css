@@ -1,0 +1,261 @@
+/**
+ * Admin Security Center - Styles
+ * Additional styles for the security page
+ */
+
+/* Loader Styles */
+.global-loader {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.global-loader.active {
+    display: flex;
+}
+
+.loader-content {
+    background: var(--bg-secondary);
+    padding: 30px 40px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--bg-tertiary);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loader-message {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* Notification Styles */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+}
+
+.notification {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-left: 4px solid;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    to {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+}
+
+.notification-success {
+    border-left-color: var(--secondary);
+}
+
+.notification-success .material-icons {
+    color: var(--secondary);
+}
+
+.notification-error {
+    border-left-color: var(--danger);
+}
+
+.notification-error .material-icons {
+    color: var(--danger);
+}
+
+.notification-warning {
+    border-left-color: var(--warning);
+}
+
+.notification-warning .material-icons {
+    color: var(--warning);
+}
+
+.notification-info {
+    border-left-color: var(--info);
+}
+
+.notification-info .material-icons {
+    color: var(--info);
+}
+
+.notification-message {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.notification-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.notification-close:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.notification-close .material-icons {
+    font-size: 20px;
+}
+
+/* User Avatar Small */
+.user-avatar-xs {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-cell-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.user-cell-email {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Hover effects */
+.action-btn:hover .material-icons {
+    transform: scale(1.1);
+}
+
+.event-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading state */
+.btn.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+/* Smooth transitions */
+.tab-content {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Tooltip */
+[title] {
+    position: relative;
+    cursor: help;
+}
+
+/* Enhanced focus styles for accessibility */
+.form-input:focus,
+.btn:focus,
+.action-btn:focus,
+.tab-btn:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .page-actions,
+    .btn,
+    .action-btn,
+    .modal-overlay,
+    .notification-container {
+        display: none !important;
+    }
+    
+    .threat-level {
+        border: 2px solid #000;
+    }
+    
+    .tab-content {
+        display: block !important;
+    }
+}

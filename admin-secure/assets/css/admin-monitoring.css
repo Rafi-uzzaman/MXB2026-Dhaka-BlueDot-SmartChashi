@@ -1,0 +1,54 @@
+/**
+ * Admin Monitoring Page Styles
+ * Comprehensive styling for system monitoring dashboard
+ */
+
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+.empty-state.small {
+    padding: 20px;
+}
+
+.empty-state .material-icons {
+    font-size: 48px;
+    opacity: 0.5;
+    display: block;
+    margin: 0 auto 12px;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+.loading-spinner .material-icons {
+    font-size: 32px;
+    color: var(--primary);
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

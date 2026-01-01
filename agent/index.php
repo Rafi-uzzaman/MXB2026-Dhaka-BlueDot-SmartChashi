@@ -1,0 +1,437 @@
+<?php
+// Start session first
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+
+
+require_once '../config/languages.php';
+require_once '../config/config.php';
+
+// Handle language switching
+if (isset($_GET['lang']) && in_array($_GET['lang'], ['en', 'bn'])) {
+    $_SESSION['language'] = $_GET['lang'];
+    setcookie('language', $_GET['lang'], time() + (86400 * 30), '/'); // 30 days
+}
+
+$currentLang = get_language();
+?>
+<!DOCTYPE html>
+<html lang="<?php echo $currentLang; ?>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle"><?php echo __('agent_page_title'); ?></title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Smart Chashi - Bangladesh's leading AI-powered agricultural platform. Get expert crop advice, disease detection, weather alerts, market prices, and community support. | স্মার্ট চাষী - বাংলাদেশের শীর্ষস্থানীয় কৃষি প্ল্যাটফর্ম। পান ফসল পরামর্শ, রোগ শনাক্তকরণ, আবহাওয়া সতর্কতা, বাজার মূল্য এবং কমিউনিটি সাপোর্ট।">
+    <meta name="keywords" content="Smart Chashi, agriculture Bangladesh, farming AI, crop management, disease detection, weather alerts, market prices, কৃষি বাংলাদেশ, ফসল ব্যবস্থাপনা, রোগ শনাক্তকরণ">
+    <meta name="author" content="Smart Chashi Team">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://smartchashi.com/">
+    <meta property="og:title" content="🌾 Smart Chashi - AI-Powered Agricultural Platform for Bangladesh">
+    <meta property="og:description" content="Empowering Bangladesh farmers with AI technology. Crop management, disease detection, weather alerts, market prices, and community support in one platform.">
+    <meta property="og:image" content="assets/logo.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Smart Chashi - AI-Powered Agricultural Platform">
+    <meta property="og:site_name" content="Smart Chashi">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://smartchashi.com/">
+    <meta name="twitter:title" content="🌾 Smart Chashi - AI Agricultural Platform">
+    <meta name="twitter:description" content="Revolutionizing agriculture in Bangladesh with AI. Expert crop advice, disease detection, weather alerts, and market prices for modern farmers.">
+    <meta name="twitter:image" content="assets/logo.png">
+    <meta name="twitter:image:alt" content="Smart Chashi Dashboard showing AI-powered agricultural assistant interface">
+    <meta name="twitter:creator" content="@smartchashi">
+    <meta name="twitter:site" content="@smartchashi">
+    
+    <!-- Additional Meta Tags -->
+    <meta name="theme-color" content="#2ecc71">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Smart Chashi">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="<?php echo $base_url; ?>agent/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="<?php echo $base_url; ?>agent/favicon.ico">
+    <link rel="apple-touch-icon" href="<?php echo $base_url; ?>agent/assets/logo.png">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="<?php echo $base_url; ?>agent/assets/css/google-font.css">
+    <link rel="stylesheet" href="<?php echo $base_url; ?>agent/assets/css/style.css">
+    
+</head>
+<body>
+    <!-- Custom Alert Modal -->
+    <div id="customAlert" class="custom-alert-modal">
+        <div class="custom-alert-content">
+            <button id="customAlertClose" class="custom-alert-close">&times;</button>
+            <div class="custom-alert-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.74c1.154 2-.762 4.5-3.121 4.5H5.167c-2.36 0-4.275-2.5-3.12-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <h3 class="custom-alert-title" id="alertTitle"><?php echo __('alert_title_voice_na'); ?></h3>
+            <p id="customAlertMessage" class="custom-alert-message"></p>
+        </div>
+    </div>
+    
+    <div class="overlay"></div>
+    
+    <!-- Voice Response Indicator -->
+    <div id="voiceIndicator" class="voice-indicator">
+        <svg class="voice-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v4a3.75 3.75 0 1 1-7.5 0v-4Z" />
+            <path d="M6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5a6.751 6.751 0 0 1-6 6.709v2.291h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3v-2.291A6.751 6.751 0 0 1 5.25 12.75v-1.5A.75.75 0 0 1 6 10.5Z" />
+        </svg>
+        <span class="voice-text" id="voiceText"><?php echo __('voice_text_reading'); ?></span>
+        <button id="stopVoiceBtn" class="stop-voice-btn" title="<?php echo __('stop_voice'); ?>">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z" />
+            </svg>
+        </button>
+    </div>
+    
+    <div class="container">
+        <!-- Language Switcher -->
+        <div style="position: absolute; top: 20px; right: 20px; z-index: 100;">
+            <select id="languageSwitcher" onchange="window.location.href='?lang='+this.value" style="padding: 8px 16px; border-radius: 8px; border: 2px solid #2ecc71; background: white; font-size: 14px; cursor: pointer; font-weight: 600; color: #2c3e50;">
+                <option value="en" <?php echo ($currentLang === 'en') ? 'selected' : ''; ?>>🇬🇧 English</option>
+                <option value="bn" <?php echo ($currentLang === 'bn') ? 'selected' : ''; ?>>🇧🇩 বাংলা</option>
+            </select>
+        </div>
+        
+        <div class="logo">
+            <img src="<?php echo $base_url; ?>agent/assets/logo.png" alt="<?php echo __('smart_chashi'); ?> Logo" class="logo-img">
+        </div>
+        <div class="tagline" id="tagline"><?php echo __('agent_tagline'); ?></div>
+        <div class="chat-area">
+
+
+            
+            <!-- <div class="input-box">
+                <div class="message">
+                    <p>
+
+                        what is rice
+                    </div>
+                    </p>
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 11.25a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" /><path fill-rule="evenodd" d="M2.513 14.077c.427 1.344 1.144 2.524 2.158 3.493.593.565 1.25.998 1.942 1.353A9.998 9.998 0 0 0 12 22.5c2.686 0 5.224-.809 7.387-2.378a7.522 7.522 0 0 1-.954-1.076l-.41-.41a5.158 5.158 0 0 0-1.077-.92c-.657-.362-1.378-.588-2.127-.674a18.284 18.284 0 0 0-1.923-.205 18.423 18.423 0 0 0-3.328.096c-.76.088-1.503.313-2.164.675a5.21 5.21 0 0 0-1.085.92l-.41.41c-.244.246-.465.48-.654.708a10.045 10.045 0 0 0-.847.962 10.012 10.012 0 0 0-.962.847l-.025.027a3.024 3.024 0 0 1-.724.593c-.633.364-1.348.59-2.091.674-.63.074-1.295.06-1.92-.046-.226-.038-.45-.074-.674-.11ZM3.75 7.5c0-.621.504-1.125 1.125-1.125h13.5c.621 0 1.125.504 1.125 1.125v6.75a9.996 9.996 0 0 0-2.07-.363 18.204 18.204 0 0 1-3.328-.096 18.416 18.416 0 0 1-1.923-.205c-.749-.086-1.47-.312-2.127-.674a5.158 5.158 0 0 0-1.077-.92l-.41-.41a7.522 7.522 0 0 1-.954-1.076C5.224 15.06 4.417 12.52 4.417 10.5a7.5 7.5 0 0 1-1.125-3V7.5Zm0 0c-.621 0-1.125.504-1.125 1.125v.75c0 4.142 3.358 7.5 7.5 7.5s7.5-3.358 7.5-7.5V8.625c0-.621-.504-1.125-1.125-1.125H3.75Z" clip-rule="evenodd" /></svg>
+                </div>
+            </div>
+            <div class="chat-message">
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.166a.75.75 0 0 0-1.061-1.061l-1.59 1.59a.75.75 0 1 0 1.06 1.061l1.591-1.59ZM12 1.5a.75.75 0 0 0-.75.75V3a.75.75 0 0 0 1.5 0V2.25a.75.75 0 0 0-.75-.75ZM6.166 18.894a.75.75 0 0 0 1.061 1.06l1.59-1.59a.75.75 0 0 0-1.06-1.061l-1.591 1.59ZM18.894 17.832a.75.75 0 0 1 0 1.062l-1.59 1.59a.75.75 0 0 1-1.061-1.06l1.59-1.59a.75.75 0 0 1 1.062 0ZM12 22.5a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-1.5 0v2.25c0 .414.336.75.75.75ZM22.5 12a.75.75 0 0 0-.75-.75h-2.25a.75.75 0 0 0 0 1.5h2.25c.414 0 .75-.336.75-.75ZM1.5 12a.75.75 0 0 0 .75.75h2.25a.75.75 0 0 0 0-1.5H2.25c-.414 0-.75.336-.75.75ZM17.832 6.166a.75.75 0 0 1 1.062 0l1.59 1.59a.75.75 0 1 1-1.06 1.061l-1.59-1.59a.75.75 0 0 1 0-1.061ZM6.166 5.105a.75.75 0 0 1 1.06-1.06l1.59 1.59a.75.75 0 0 1-1.06 1.061l-1.591-1.59Z" /></svg>
+                </div>
+                <div class="message-content">
+                    <div class="chat-header">
+                        <span class="label detected">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M2.513 14.077c.427 1.344 1.144 2.524 2.158 3.493.593.565 1.25.998 1.942 1.353A9.998 9.998 0 0 0 12 22.5c2.686 0 5.224-.809 7.387-2.378a7.522 7.522 0 0 1-.954-1.076l-.41-.41a5.158 5.158 0 0 0-1.077-.92c-.657-.362-1.378-.588-2.127-.674a18.284 18.284 0 0 0-1.923-.205 18.423 18.423 0 0 0-3.328.096c-.76.088-1.503.313-2.164.675a5.21 5.21 0 0 0-1.085.92l-.41.41c-.244.246-.465.48-.654.708a10.045 10.045 0 0 0-.847.962 10.012 10.012 0 0 0-.962.847l-.025.027a3.024 3.024 0 0 1-.724.593c-.633.364-1.348.59-2.091.674-.63.074-1.295.06-1.92-.046-.226-.038-.45-.074-.674-.11ZM3.75 7.5c0-.621.504-1.125 1.125-1.125h13.5c.621 0 1.125.504 1.125 1.125v6.75a9.996 9.996 0 0 0-2.07-.363 18.204 18.204 0 0 1-3.328-.096 18.416 18.416 0 0 1-1.923-.205c-.749-.086-1.47-.312-2.127-.674a5.158 5.158 0 0 0-1.077-.92l-.41-.41a7.522 7.522 0 0 1-.954-1.076C5.224 15.06 4.417 12.52 4.417 10.5a7.5 7.5 0 0 1-1.125-3V7.5Zm0 0c-.621 0-1.125.504-1.125 1.125v.75c0 4.142 3.358 7.5 7.5 7.5s7.5-3.358 7.5-7.5V8.625c0-.621-.504-1.125-1.125-1.125H3.75Z" clip-rule="evenodd" /></svg>
+                             Detected Language: EN
+                        </span>
+                        <span class="label translated">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 16.5 0 8.25 8.25 0 0 1-16.5 0Zm18.528 2.222a.75.75 0 0 0-1.06 1.06l1.22 1.22a.75.75 0 0 0 1.06-1.06l-1.22-1.22Z" clip-rule="evenodd" /><path d="M11.25 17.25a.75.75 0 0 0-.75.75v2.25a.75.75 0 0 0 1.5 0V18a.75.75 0 0 0-.75-.75Z" /></svg>
+                             
+                             Translated Query: 
+
+                    Rice is the edible seed (grain) of the grass species, Oryza sativa (Asian rice) and, to a lesser extent, Oryza glaberrima (African rice). It is cultivated worldwide, often in flooded paddies or dry fields, and serves as a staple food for more than half of the global population, providing a major source of carbohydrates, calories, and some protein. After harvesting, the rice grain is milled to remove the husk (producing brown rice) and sometimes the bran layer (producing white rice), and it is used in a wide variety of culinary dishes.
+
+                        </span>
+                    </div>
+                    <div class="chat-bubble">
+                        <p style="text-align: justify;"><strong>Rice</strong> is the edible seed (grain) of the grass species, <i>Oryza sativa</i> (Asian rice) and, to a lesser extent, <i>Oryza glaberrima</i> (African rice). It is cultivated worldwide, often in flooded paddies or dry fields, and serves as a staple food for more than half of the global population, providing a major source of carbohydrates, calories, and some protein. After harvesting, the rice grain is milled to remove the husk (producing brown rice) and sometimes the bran layer (producing white rice), and it is used in a wide variety of culinary dishes.</p>
+                    </div>
+                </div>
+            </div> -->
+
+            <!-- <div class="chat-message fourdot">
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.166a.75.75 0 0 0-1.061-1.061l-1.59 1.59a.75.75 0 1 0 1.06 1.061l1.591-1.59ZM12 1.5a.75.75 0 0 0-.75.75V3a.75.75 0 0 0 1.5 0V2.25a.75.75 0 0 0-.75-.75ZM6.166 18.894a.75.75 0 0 0 1.061 1.06l1.59-1.59a.75.75 0 0 0-1.06-1.061l-1.591 1.59ZM18.894 17.832a.75.75 0 0 1 0 1.062l-1.59 1.59a.75.75 0 0 1-1.061-1.06l1.59-1.59a.75.75 0 0 1 1.062 0ZM12 22.5a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-1.5 0v2.25c0 .414.336.75.75.75ZM22.5 12a.75.75 0 0 0-.75-.75h-2.25a.75.75 0 0 0 0 1.5h2.25c.414 0 .75-.336.75-.75ZM1.5 12a.75.75 0 0 0 .75.75h2.25a.75.75 0 0 0 0-1.5H2.25c-.414 0-.75.336-.75.75ZM17.832 6.166a.75.75 0 0 1 1.062 0l1.59 1.59a.75.75 0 1 1-1.06 1.061l-1.59-1.59a.75.75 0 0 1 0-1.061ZM6.166 5.105a.75.75 0 0 1 1.06-1.06l1.59 1.59a.75.75 0 0 1-1.06 1.061l-1.591-1.59Z" /></svg>
+                </div>
+                <div class="message-content">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div> -->
+
+
+
+
+
+        </div>
+    </div>
+    <div class="main-input-container">
+        <div class="input-box">
+            <input type="text" placeholder="<?php echo __('agent_placeholder'); ?>" id="prompt">
+            <button id="sendBtn">
+                <div style="width:40px">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 0 0-.926.94l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.981.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.405Z" /></svg>
+                </div>
+            </button>
+        </div>
+
+        <button class="mic-icon commonBtn" id="voice_search">
+            <div style="width: 40px;">
+                <i class="material-icons">mic</i>
+            </div>
+            <span id="voiceButtonText"><?php echo __('voice_button'); ?></span>
+        </button>
+    </div>
+
+
+    <div id="microphone" class="">
+    <div class="recoder">
+      <div class="close"><span></span></div>
+      <select name="lang" id="lang">
+        <option value="bn-BD" selected>🇧🇩 বাংলা</option>
+        <option value="en-US">🇬🇧 English</option>
+      </select>
+      <p id="recoredText"></p>
+      <button id="speakBtn"><i class="material-icons">mic</i></button>
+    </div>
+  </div>
+
+
+  <script src="<?php echo $base_url; ?>agent/assets/js/jquery.js"></script>
+<script src="<?php echo $base_url; ?>agent/assets/js/config.js"></script>
+  <script src="<?php echo $base_url; ?>agent/assets/js/script.js"></script>
+
+
+<script>
+// PHP-powered translations injected into JavaScript
+const currentTranslations = {
+    detectedLang: '<?php echo __('detected_language'); ?>',
+    translatedQuery: '<?php echo __('translated_query'); ?>',
+    errorMessage: '<?php echo __('error_connection'); ?>'
+};
+
+// Current language from PHP
+const currentLang = '<?php echo $currentLang; ?>';
+</script>
+
+<script>
+$(document).ready(function () {
+    let flag = 1;
+
+    // Utility Functions
+    function getPromptText() {
+        return $('#prompt').val().trim();
+    }
+
+    function clearPrompt() {
+        $('#prompt').val('').attr('value', '').text('');
+        $('#prompt').focus();
+    }
+
+    function setButtonsDisabled(disabled = true) {
+        $('#sendBtn').prop('disabled', disabled);
+        $('#voice_search').prop('disabled', disabled);
+    }
+
+    function appendUserMessage(text) {
+        $(".chat-area").append(`
+            <div class="input-box">
+                <div class="message"><p>${text}</p></div>
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 11.25a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" /><path fill-rule="evenodd" d="M2.513 14.077c.427 1.344 1.144 2.524 2.158 3.493.593.565 1.25.998 1.942 1.353A9.998 9.998 0 0 0 12 22.5c2.686 0 5.224-.809 7.387-2.378a7.522 7.522 0 0 1-.954-1.076l-.41-.41a5.158 5.158 0 0 0-1.077-.92c-.657-.362-1.378-.588-2.127-.674a18.284 18.284 0 0 0-1.923-.205 18.423 18.423 0 0 0-3.328.096c-.76.088-1.503.313-2.164.675a5.21 5.21 0 0 0-1.085.92l-.41.41c-.244.246-.465.48-.654.708a10.045 10.045 0 0 0-.847.962 10.012 10.012 0 0 0-.962.847l-.025.027a3.024 3.024 0 0 1-.724.593c-.633.364-1.348.59-2.091.674-.63.074-1.295.06-1.92-.046-.226-.038-.45-.074-.674-.11ZM3.75 7.5c0-.621.504-1.125 1.125-1.125h13.5c.621 0 1.125.504 1.125 1.125v6.75a9.996 9.996 0 0 0-2.07-.363 18.204 18.204 0 0 1-3.328-.096 18.416 18.416 0 0 1-1.923-.205c-.749-.086-1.47-.312-2.127-.674a5.158 5.158 0 0 0-1.077-.92l-.41-.41a7.522 7.522 0 0 1-.954-1.076C5.224 15.06 4.417 12.52 4.417 10.5a7.5 7.5 0 0 1-1.125-3V7.5Zm0 0c-.621 0-1.125.504-1.125 1.125v.75c0 4.142 3.358 7.5 7.5 7.5s7.5-3.358 7.5-7.5V8.625c0-.621-.504-1.125-1.125-1.125H3.75Z" clip-rule="evenodd" /></svg>
+
+                </div>
+            </div>
+        `);
+    }
+
+    // Backend now handles all formatting and translation
+    // Direct display without additional processing
+
+    function appendBotMessage(reply, detectedLang = "EN", translatedQuery = "") {
+        removeDelayAnimation();
+
+        $(".chat-area").append(`
+            <div class="chat-message">
+                <div class="icon-wrapper">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.166a.75.75 0 0 0-1.061-1.061l-1.59 1.59a.75.75 0 1 0 1.06 1.061l1.591-1.59ZM12 1.5a.75.75 0 0 0-.75.75V3a.75.75 0 0 0 1.5 0V2.25a.75.75 0 0 0-.75-.75ZM6.166 18.894a.75.75 0 0 0 1.061 1.06l1.59-1.59a.75.75 0 0 0-1.06-1.061l-1.591 1.59ZM18.894 17.832a.75.75 0 0 1 0 1.062l-1.59 1.59a.75.75 0 0 1-1.061-1.06l1.59-1.59a.75.75 0 0 1 1.062 0ZM12 22.5a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-1.5 0v2.25c0 .414.336.75.75.75ZM22.5 12a.75.75 0 0 0-.75-.75h-2.25a.75.75 0 0 0 0 1.5h2.25c.414 0 .75-.336.75-.75ZM1.5 12a.75.75 0 0 0 .75.75h2.25a.75.75 0 0 0 0-1.5H2.25c-.414 0-.75.336-.75.75ZM17.832 6.166a.75.75 0 0 1 1.062 0l1.59 1.59a.75.75 0 1 1-1.06 1.061l-1.59-1.59a.75.75 0 0 1 0-1.061ZM6.166 5.105a.75.75 0 0 1 1.06-1.06l1.59 1.59a.75.75 0 0 1-1.06 1.061l-1.591-1.59Z" /></svg>
+
+                </div>
+                <div class="message-content">
+                    <div class="chat-header">
+                        <span class="label detected">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M2.513 14.077c.427 1.344 1.144 2.524 2.158 3.493.593.565 1.25.998 1.942 1.353A9.998 9.998 0 0 0 12 22.5c2.686 0 5.224-.809 7.387-2.378a7.522 7.522 0 0 1-.954-1.076l-.41-.41a5.158 5.158 0 0 0-1.077-.92c-.657-.362-1.378-.588-2.127-.674a18.284 18.284 0 0 0-1.923-.205 18.423 18.423 0 0 0-3.328.096c-.76.088-1.503.313-2.164.675a5.21 5.21 0 0 0-1.085.92l-.41.41c-.244.246-.465.48-.654.708a10.045 10.045 0 0 0-.847.962 10.012 10.012 0 0 0-.962.847l-.025.027a3.024 3.024 0 0 1-.724.593c-.633.364-1.348.59-2.091.674-.63.074-1.295.06-1.92-.046-.226-.038-.45-.074-.674-.11ZM3.75 7.5c0-.621.504-1.125 1.125-1.125h13.5c.621 0 1.125.504 1.125 1.125v6.75a9.996 9.996 0 0 0-2.07-.363 18.204 18.204 0 0 1-3.328-.096 18.416 18.416 0 0 1-1.923-.205c-.749-.086-1.47-.312-2.127-.674a5.158 5.158 0 0 0-1.077-.92l-.41-.41a7.522 7.522 0 0 1-.954-1.076C5.224 15.06 4.417 12.52 4.417 10.5a7.5 7.5 0 0 1-1.125-3V7.5Zm0 0c-.621 0-1.125.504-1.125 1.125v.75c0 4.142 3.358 7.5 7.5 7.5s7.5-3.358 7.5-7.5V8.625c0-.621-.504-1.125-1.125-1.125H3.75Z" clip-rule="evenodd" /></svg>
+                            <span class="lang-label-text">${currentTranslations.detectedLang}</span>: ${detectedLang}
+                            </span>
+                        <span class="label translated">                           
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 16.5 0 8.25 8.25 0 0 1-16.5 0Zm18.528 2.222a.75.75 0 0 0-1.06 1.06l1.22 1.22a.75.75 0 0 0 1.06-1.06l-1.22-1.22Z" clip-rule="evenodd" /><path d="M11.25 17.25a.75.75 0 0 0-.75.75v2.25a.75.75 0 0 0 1.5 0V18a.75.75 0 0 0-.75-.75Z" /></svg>
+                            <span class="lang-label-text">${currentTranslations.translatedQuery}</span>: ${translatedQuery}
+                        </span>
+                        ${isVoiceConversation ? '<span class="voice-conversation-badge"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v4a3.75 3.75 0 1 1-7.5 0v-4Z" /><path d="M6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5a6.751 6.751 0 0 1-6 6.709v2.291h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3v-2.291A6.751 6.751 0 0 1 5.25 12.75v-1.5A.75.75 0 0 1 6 10.5Z" /></svg>ভয়েস</span>' : ''}
+                    </div>
+                    <div class="chat-bubble">
+                        <div style="text-align: justify; line-height: 1.6;" class="formatted-content">${reply}</div>
+                    </div>
+                </div>
+            </div>
+        `);
+        
+        // Automatically speak the AI response if conversation was initiated by voice or always speak is enabled
+        if (typeof speakAIResponse === 'function') {
+            // Add slight delay to ensure message is rendered and notification sound plays
+            setTimeout(() => {
+                const alwaysSpeak = localStorage.getItem('alwaysSpeak') === 'true';
+                console.log('🔊 Attempting to speak AI response:', { 
+                    isVoiceConversation, 
+                    alwaysSpeak, 
+                    textLength: reply?.length,
+                    detectedLang 
+                });
+                
+                // Call voice response with enhanced parameters
+                speakAIResponse(reply, detectedLang, alwaysSpeak);
+            }, 300); // Reduced delay for faster response
+        }
+    }
+
+    function addDelayAnimation(){
+        $('.chat-area').append(`
+         <div class="chat-message fourdot">
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.166a.75.75 0 0 0-1.061-1.061l-1.59 1.59a.75.75 0 1 0 1.06 1.061l1.591-1.59ZM12 1.5a.75.75 0 0 0-.75.75V3a.75.75 0 0 0 1.5 0V2.25a.75.75 0 0 0-.75-.75ZM6.166 18.894a.75.75 0 0 0 1.061 1.06l1.59-1.59a.75.75 0 0 0-1.06-1.061l-1.591 1.59ZM18.894 17.832a.75.75 0 0 1 0 1.062l-1.59 1.59a.75.75 0 0 1-1.061-1.06l1.59-1.59a.75.75 0 0 1 1.062 0ZM12 22.5a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-1.5 0v2.25c0 .414.336.75.75.75ZM22.5 12a.75.75 0 0 0-.75-.75h-2.25a.75.75 0 0 0 0 1.5h2.25c.414 0 .75-.336.75-.75ZM1.5 12a.75.75 0 0 0 .75.75h2.25a.75.75 0 0 0 0-1.5H2.25c-.414 0-.75.336-.75.75ZM17.832 6.166a.75.75 0 0 1 1.062 0l1.59 1.59a.75.75 0 1 1-1.06 1.061l-1.59-1.59a.75.75 0 0 1 0-1.061ZM6.166 5.105a.75.75 0 0 1 1.06-1.06l1.59 1.59a.75.75 0 0 1-1.06 1.061l-1.591-1.59Z" /></svg>
+                </div>
+                <div class="message-content">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+        `);
+        
+        new Audio('assets/audio/message send.mp3').play();
+    }
+
+  
+
+         function removeDelayAnimation() {
+            $('.chat-area .fourdot').remove();
+            new Audio('assets/audio/message-notification.mp3').play();
+        }
+
+
+
+
+
+    function appendErrorMessage(message = "Error: Could not connect to server.") {
+                removeDelayAnimation();
+
+        $(".chat-area").append(`
+            <div class="chat-message">
+                <div class="icon-wrapper">
+                                                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.166a.75.75 0 0 0-1.061-1.061l-1.59 1.59a.75.75 0 1 0 1.06 1.061l1.591-1.59ZM12 1.5a.75.75 0 0 0-.75.75V3a.75.75 0 0 0 1.5 0V2.25a.75.75 0 0 0-.75-.75ZM6.166 18.894a.75.75 0 0 0 1.061 1.06l1.59-1.59a.75.75 0 0 0-1.06-1.061l-1.591 1.59ZM18.894 17.832a.75.75 0 0 1 0 1.062l-1.59 1.59a.75.75 0 0 1-1.061-1.06l1.59-1.59a.75.75 0 0 1 1.062 0ZM12 22.5a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-1.5 0v2.25c0 .414.336.75.75.75ZM22.5 12a.75.75 0 0 0-.75-.75h-2.25a.75.75 0 0 0 0 1.5h2.25c.414 0 .75-.336.75-.75ZM1.5 12a.75.75 0 0 0 .75.75h2.25a.75.75 0 0 0 0-1.5H2.25c-.414 0-.75.336-.75.75ZM17.832 6.166a.75.75 0 0 1 1.062 0l1.59 1.59a.75.75 0 1 1-1.06 1.061l-1.59-1.59a.75.75 0 0 1 0-1.061ZM6.166 5.105a.75.75 0 0 1 1.06-1.06l1.59 1.59a.75.75 0 0 1-1.06 1.061l-1.591-1.59Z" /></svg>
+
+                </div>
+                <div class="message-content">
+                    <div class="chat-bubble">
+                        <p style="text-align: justify;">${message}</p>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+
+    // Press Enter to send message
+    $('#prompt').on('keydown', function(e) {
+        if (flag === 1 && (e.key === 'Enter' || e.keyCode === 13)) {
+            e.preventDefault();
+            const promptText = getPromptText();
+            if (promptText.length > 1) {
+                $('#sendBtn').click();
+            }
+        }
+    });
+
+    $('#sendBtn').click(async function() {
+        const promptText = getPromptText();
+        if (promptText.length <= 1) return;
+
+        clearPrompt();
+        setButtonsDisabled(true);
+        flag = 0;
+
+        appendUserMessage(promptText);
+        addDelayAnimation();
+
+        try {
+            const API_BASE = (window.ROOTSOURCE_API_BASE || '').replace(/\/$/, '');
+            
+            // Get user location for better Bangla localization
+            let userLocation = localStorage.getItem('userLocation') || 'Gazipur, Bangladesh';
+            
+            // Try to get fresh location if geolocation is available
+            if (navigator.geolocation) {
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            timeout: 3000,
+                            enableHighAccuracy: false
+                        });
+                    });
+                    
+                    // Reverse geocoding to get location name (simplified approach)
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    // For Bangladesh region, provide appropriate location
+                    if (lat >= 20.5 && lat <= 26.5 && lon >= 88.0 && lon <= 92.7) {
+                        userLocation = 'Dhaka, Bangladesh';
+                        localStorage.setItem('userLocation', userLocation);
+                    }
+                } catch (geoError) {
+                    console.log('Geolocation not available or denied, using stored/default location');
+                }
+            }
+            
+            // Send message directly to backend for processing
+            let messageToSend = promptText;
+            
+            const wasVoiceConversation = isVoiceConversation;
+            console.log('📤 Sending request, voice conversation state:', wasVoiceConversation);
+            
+            const response = await fetch(`${API_BASE}/chat`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ 
+                    message: messageToSend,
+                    location: userLocation
+                })
+            });
+            const data = await response.json();
+            
+            if (wasVoiceConversation) {
+                isVoiceConversation = true;
+                console.log('🔄 Restored voice conversation state');
+            }
+            
+            appendBotMessage(data.reply,data.detectedLang,data.translatedQuery);
+        } catch (err) {
+            console.error("Error:", err);
+            appendErrorMessage(currentTranslations.errorMessage);
+            setButtonsDisabled(false);
+            flag = 1;
+        } finally {
+            setButtonsDisabled(false);
+            flag = 1;
+        }
+    });
+});
+</script>
+
+</body>
+</html>
+
